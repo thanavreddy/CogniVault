@@ -4,7 +4,7 @@
 
 An end-to-end AI application that allows users to ask questions over private enterprise documents and receive grounded, context-aware answers.
 
-The project combines **RAG, LangGraph multi-agent workflows, LLMs, evaluation, guardrails, and observability** into a complete full-stack system.
+The project combines **RAG, LangGraph multi-agent workflows, LLMs, evaluation, guardrails** into a complete full-stack system.
 
 ---
 
@@ -15,7 +15,6 @@ The project combines **RAG, LangGraph multi-agent workflows, LLMs, evaluation, g
 *  **LLM Integration** — OpenAI and Anthropic models with dynamic routing
 *  **AI Guardrails** — Prompt injection, hallucination, and moderation checks
 *  **Evaluation** — 6-metric evaluation framework for measuring response quality
-*  **Observability** — Tracing and monitoring with OpenTelemetry, AgentOps, Prometheus, Grafana, and Jaeger
 *  **Full-Stack Application** — Next.js frontend with FastAPI backend
 *  **Authentication** — Secure user authentication with Clerk
 
