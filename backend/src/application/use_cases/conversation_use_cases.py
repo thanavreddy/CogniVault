@@ -1,98 +1,134 @@
-from typing import List, Optional, Dict, Any
-from uuid import UUID
-from datetime import datetime, timezone
+"""Conversation and chat use cases."""
+import logging
+from uuid import UUID, uuid4
 
-from src.domain.entities.conversation import Conversation, Message, MessageRole, Citation
+from src.domain.entities.conversation import Conversation, Message, MessageRole
 from src.domain.repositories.conversation_repository import ConversationRepository
-from src.domain.services.document_service import DocumentService
-# In a real app we'd have an LLMService or RAGService
-# from src.domain.services.llm_service import LLMService
+from src.application.rag.rag_pipeline import RAGPipeline, RAGResponse
+from src.domain.entities.evaluation import EvaluationResult
+from src.infrastructure.repositories.postgres_evaluation_repository import PostgresEvaluationRepository
+
+logger = logging.getLogger(__name__)
+
 
 class CreateConversationUseCase:
-    def __init__(self, conversation_repository: ConversationRepository):
-        self.conversation_repository = conversation_repository
-
-    async def execute(self, workspace_id: UUID, user_id: UUID, title: str) -> Conversation:
-        conversation = Conversation(
-            workspace_id=workspace_id,
-            user_id=user_id,
-            title=title
-        )
-        return await self.conversation_repository.create(conversation)
-
-class SendMessageUseCase:
-    def __init__(
-        self, 
-        conversation_repository: ConversationRepository,
-        document_service: DocumentService
-    ):
-        self.conversation_repository = conversation_repository
-        self.document_service = document_service
+    def __init__(self, conversation_repo: ConversationRepository) -> None:
+        self._repo = conversation_repo
 
     async def execute(
-        self, 
-        workspace_id: UUID, 
-        user_id: UUID,
-        query: str, 
-        conversation_id: Optional[UUID] = None,
-        filters: Optional[Dict[str, Any]] = None
-    ) -> Message:
-        if not conversation_id:
-            # Create a new conversation
-            conversation = await CreateConversationUseCase(self.conversation_repository).execute(
-                workspace_id, user_id, title=query[:50]
+        self,
+        workspace_id: UUID,
+        user_id: str,
+        title: str | None = None,
+    ) -> Conversation:
+        conversation = Conversation(
+            id=uuid4(),
+            workspace_id=workspace_id,
+            user_id=user_id,
+            title=title or "New Conversation",
+        )
+        return await self._repo.create(conversation)
+
+
+class SendMessageUseCase:
+    """Main RAG entry point — processes a user message and returns an AI response."""
+
+    def __init__(
+        self,
+        conversation_repo: ConversationRepository,
+        rag_pipeline: RAGPipeline,
+        evaluation_repo: PostgresEvaluationRepository | None = None,
+    ) -> None:
+        self._conv_repo = conversation_repo
+        self._rag_pipeline = rag_pipeline
+        self._eval_repo = evaluation_repo
+
+    async def execute(
+        self,
+        content: str,
+        workspace_id: UUID,
+        user_id: str,
+        conversation_id: UUID | None = None,
+        document_ids: list[UUID] | None = None,
+        force_model: str | None = None,
+    ) -> tuple[Conversation, Message]:
+        """Process a message and return the updated conversation and AI response."""
+        # ── Get or create conversation ────────────────────────────────────────
+        if conversation_id:
+            conversation = await self._conv_repo.get_by_id(conversation_id)
+            if not conversation:
+                raise ValueError(f"Conversation {conversation_id} not found")
+        else:
+            conversation = Conversation(
+                id=uuid4(),
+                workspace_id=workspace_id,
+                user_id=user_id,
+                title=content[:60] + "..." if len(content) > 60 else content,
             )
-            conversation_id = conversation.id
+            conversation = await self._conv_repo.create(conversation)
 
-        # 1. Save user message
-        user_msg = Message(
-            conversation_id=conversation_id,
+        # ── Save user message ─────────────────────────────────────────────────
+        user_message = Message(
+            id=uuid4(),
+            conversation_id=conversation.id,
             role=MessageRole.USER,
-            content=query
+            content=content,
         )
-        await self.conversation_repository.add_message(user_msg)
+        await self._conv_repo.add_message(user_message)
 
-        # 2. Search knowledge base
-        chunks = await self.document_service.search_documents(workspace_id, query, filters)
-        
-        # 3. Formulate RAG answer (simulated here)
-        # Would use self.llm_service.generate_answer(query, chunks)
-        answer_text = f"Simulated answer based on {len(chunks)} sources."
-        
-        citations = []
-        for i, chunk in enumerate(chunks[:3]):
-            citations.append(Citation(
-                document_id=chunk.document_id,
-                document_title=chunk.metadata.get("title", "Unknown"),
-                chunk_id=chunk.id,
-                content_snippet=chunk.content[:100],
-                page_number=chunk.page_number,
-                relevance_score=0.9 - (i * 0.1)
-            ))
+        # ── Run RAG pipeline ──────────────────────────────────────────────────
+        rag_response: RAGResponse = await self._rag_pipeline.run(
+            query=content,
+            workspace_id=str(workspace_id),
+            conversation_history=conversation.messages,
+            document_ids=[str(d) for d in document_ids] if document_ids else None,
+            force_model=force_model,
+        )
 
-        # 4. Save assistant message
-        assistant_msg = Message(
-            conversation_id=conversation_id,
+        # ── Save assistant message ────────────────────────────────────────────
+        assistant_message = Message(
+            id=uuid4(),
+            conversation_id=conversation.id,
             role=MessageRole.ASSISTANT,
-            content=answer_text,
-            sources=citations,
-            token_count=150,
-            model_used="gpt-4o-mini"
+            content=rag_response.answer,
+            sources=rag_response.citations,
+            token_count=rag_response.token_count,
+            latency_ms=int(rag_response.latency_ms),
+            model_used=rag_response.model_used,
+            cost_usd=rag_response.cost_usd,
         )
-        await self.conversation_repository.add_message(assistant_msg)
-        
-        return assistant_msg
+        saved_message = await self._conv_repo.add_message(assistant_message)
+
+        # ── Refresh conversation ──────────────────────────────────────────────
+        updated_conversation = await self._conv_repo.get_by_id(conversation.id)
+
+        return updated_conversation, saved_message
+
 
 class GetConversationHistoryUseCase:
-    def __init__(self, conversation_repository: ConversationRepository):
-        self.conversation_repository = conversation_repository
+    def __init__(self, conversation_repo: ConversationRepository) -> None:
+        self._repo = conversation_repo
 
-    async def execute(self, conversation_id: UUID) -> List[Message]:
-        return await self.conversation_repository.get_messages(conversation_id)
+    async def execute(
+        self,
+        workspace_id: UUID,
+        user_id: str,
+        skip: int = 0,
+        limit: int = 20,
+    ) -> list[Conversation]:
+        return await self._repo.get_by_workspace(workspace_id, user_id, skip, limit)
+
 
 class DeleteConversationUseCase:
-    def __init__(self, conversation_repository: ConversationRepository):
-        self.conversation_repository = conversation_repository
+    def __init__(self, conversation_repo: ConversationRepository) -> None:
+        self._repo = conversation_repo
 
-    async def execute(self, conversation_id: UUID) -> bool:
-        return await self.conversation_repository.delete(conversation_id)
+    async def execute(
+        self, conversation_id: UUID, user_id: str
+    ) -> None:
+        conversation = await self._repo.get_by_id(conversation_id)
+        if not conversation:
+            raise ValueError(f"Conversation {conversation_id} not found")
+        if conversation.user_id != user_id:
+            raise PermissionError("Cannot delete another user's conversation")
+        await self._repo.delete(conversation_id)

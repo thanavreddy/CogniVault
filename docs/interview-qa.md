@@ -18,8 +18,9 @@ A: We use Clerk for identity management. The frontend obtains a JWT upon user lo
 A: 
 - **Stateless API:** Scale FastAPI horizontally using Kubernetes or ECS behind a load balancer.
 - **Database:** Implement connection pooling (PgBouncer), read replicas for PostgreSQL.
-- **Async Workers:** Offload heavy document embedding and chunking to Celery/Redis workers.
-- **Caching:** Cache frequent LLM responses or embeddings using Redis.
+- **Async Workers:** Background processing is disabled while Redis-backed workers are disabled.
+- **Caching:** Embeddings are requested directly without Redis caching.
+- **LLM:** Local inference runs through Ollama; no OpenAI or Anthropic API key is required.
 
 **Q: What's your database indexing strategy?**
 A: We use composite indexes (e.g., `workspace_id` + `created_at`) to optimize dashboard queries. Partial indexes are used for tracking document statuses (e.g., `WHERE status = 'processing'`). In Qdrant, HNSW indexes are utilized, along with payload indexes for metadata filtering (like filtering chunks by a specific `document_id`).
@@ -28,7 +29,7 @@ A: We use composite indexes (e.g., `workspace_id` + `created_at`) to optimize da
 A: We use Alembic to manage database schema versions. Migrations are run as part of a CI/CD pipeline using a deployment strategy that separates schema changes from code deployments (blue-green deployments). We ensure migrations are backward compatible (e.g., adding a column before code uses it, dropping it only after code stops using it).
 
 **Q: Why Docker Compose for development?**
-A: It provides a reproducible, isolated environment that mirrors production dependencies. New developers can spin up the entire stack (PostgreSQL, Qdrant, Redis, APM tools) with a single `docker compose up` command, eliminating "works on my machine" issues and complicated local setup instructions.
+A: It provides a reproducible, isolated environment that mirrors production dependencies. New developers can spin up the entire stack (PostgreSQL, Qdrant, and APM tools) with a single `docker compose up` command, eliminating "works on my machine" issues and complicated local setup instructions.
 
 ## RAG System Questions
 
@@ -42,7 +43,7 @@ A: Chunk size is a balance between context completeness and noise. We typically 
 A: Hybrid retrieval combines semantic (vector-based) search, which understands intent and meaning, with lexical (keyword-based) search like BM25, which is excellent for exact noun or acronym matching. The results are re-ranked using techniques like Reciprocal Rank Fusion (RRF) to provide the most relevant context.
 
 **Q: How do you handle context window limits?**
-A: We limit the number of retrieved chunks (Top-K), summarize lengthy contexts using a map-reduce summarization chain before passing it to the final prompt, and utilize model dynamic routing (sending larger contexts to models like Claude 3.5 Sonnet that handle massive context windows well).
+A: We limit the number of retrieved chunks (Top-K), summarize lengthy contexts using a map-reduce summarization chain before passing it to the final prompt, and utilize model dynamic routing across the configured local Ollama model.
 
 ## AI Engineering Questions
 

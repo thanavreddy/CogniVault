@@ -48,7 +48,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex-1">
                     <h4 className="text-sm font-semibold">How do I setup SSO?</h4>
-                    <p className="text-xs text-muted-foreground">Using model GPT-4o • 2 hours ago</p>
+                    <p className="text-xs text-muted-foreground">Using local Ollama model • 2 hours ago</p>
                   </div>
                 </div>
               ))}

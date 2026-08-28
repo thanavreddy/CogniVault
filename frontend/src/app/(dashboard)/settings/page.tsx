@@ -46,18 +46,18 @@ export default function SettingsPage() {
         <TabsContent value="models">
           <Card>
             <CardHeader>
-              <CardTitle>LLM Providers</CardTitle>
-              <CardDescription>Configure API keys for external providers.</CardDescription>
+              <CardTitle>Local LLM</CardTitle>
+              <CardDescription>Configure the Ollama server and local models.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
-                <label className="text-sm font-medium">OpenAI API Key</label>
-                <Input type="password" defaultValue="sk-........................" />
-                <p className="text-xs text-muted-foreground">Used for GPT-4 and embeddings.</p>
+                <label className="text-sm font-medium">Ollama Base URL</label>
+                <Input defaultValue="http://localhost:11434" />
+                <p className="text-xs text-muted-foreground">The local Ollama server endpoint.</p>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Anthropic API Key</label>
-                <Input type="password" placeholder="sk-ant-..." />
+                <label className="text-sm font-medium">Chat Model</label>
+                <Input defaultValue="qwen2.5:7b" />
               </div>
               <Button>Update Keys</Button>
             </CardContent>

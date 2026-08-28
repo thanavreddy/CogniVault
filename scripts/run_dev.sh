@@ -4,7 +4,7 @@ set -e
 echo "Starting development environment..."
 
 # Start infrastructure
-docker compose up -d postgres qdrant redis prometheus grafana jaeger
+docker compose up -d postgres qdrant prometheus grafana jaeger
 
 echo "Waiting for services to be ready..."
 sleep 5

@@ -56,7 +56,7 @@ sequenceDiagram
     API-->>Frontend: Return Document ID
     Worker->>Storage: Load file
     Worker->>Worker: Extract text, chunking
-    Worker->>Worker: Generate embeddings (OpenAI)
+    Worker->>Ollama: Generate embeddings (nomic-embed-text)
     Worker->>Qdrant: Upsert vectors & metadata
     Worker->>API: Update DB status to processed
 ```

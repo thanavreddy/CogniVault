@@ -11,7 +11,7 @@ Contains enterprise logic, entities (User, Document, Message, Workspace), and re
 Contains use cases (e.g., ProcessDocument, AnswerQuery). Orchestrates the flow of data to and from the entities, directing those entities to use their enterprise logic to achieve the goals of the use case.
 
 ### Infrastructure Layer
-Implements repository interfaces. Handles database connections (SQLAlchemy), vector database interactions (Qdrant), LLM integrations (LangChain/OpenAI), and external APIs.
+Implements repository interfaces. Handles database connections (SQLAlchemy), vector database interactions (Qdrant), local LLM integration (LangChain/Ollama), and external APIs.
 
 ### API Layer
 FastAPI endpoints routing HTTP requests to application use cases. Handles authentication middlewares, request validation (Pydantic), and response formatting.

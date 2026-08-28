@@ -117,7 +117,7 @@ def mock_qdrant():
 
 
 @pytest.fixture
-def mock_openai_embeddings():
+def mock_ollama_embeddings():
     mock = AsyncMock()
     mock.embed_text.return_value = [0.1] * 1536
     mock.embed_batch.return_value = [[0.1] * 1536]
@@ -125,12 +125,12 @@ def mock_openai_embeddings():
 
 
 @pytest.fixture
-def mock_openai_client():
+def mock_ollama_client():
     mock = AsyncMock()
-    from src.infrastructure.llm.openai_client import LLMResponse
+    from src.infrastructure.llm.ollama_client import LLMResponse
     mock.complete.return_value = LLMResponse(
         content="This is a test answer from the mock LLM.",
-        model="gpt-4o-mini",
+        model="qwen2.5:7b",
         usage={"prompt_tokens": 100, "completion_tokens": 50, "total_tokens": 150},
         cost=0.0001,
         latency_ms=500,

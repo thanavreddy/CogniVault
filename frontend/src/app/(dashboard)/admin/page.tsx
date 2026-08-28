@@ -52,7 +52,7 @@ export default function AdminPage() {
           <div className="bg-black text-green-400 p-4 rounded-md font-mono text-sm h-[300px] overflow-y-auto">
             <div>[INFO] 2024-02-15 10:23:41 - Vector reindexing completed for WS-124</div>
             <div>[INFO] 2024-02-15 10:25:12 - New user sign up: user@example.com</div>
-            <div className="text-yellow-400">[WARN] 2024-02-15 10:26:05 - API rate limit approaching for OpenAI integration</div>
+            <div className="text-yellow-400">[INFO] 2024-02-15 10:26:05 - Ollama local inference is active</div>
             <div>[INFO] 2024-02-15 10:30:00 - Routine backup initiated.</div>
             <div className="text-red-400">[ERROR] 2024-02-15 10:31:12 - Failed to parse PDF document ID 4921</div>
           </div>

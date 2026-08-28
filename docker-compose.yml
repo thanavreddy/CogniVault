@@ -28,13 +28,13 @@ services:
     networks:
       - ai-network
     
-  redis:
-    image: redis:7-alpine
-    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
-    ports:
-      - "6379:6379"
-    networks:
-      - ai-network
+  # redis:
+  #   image: redis:7-alpine
+  #   command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+  #   ports:
+  #     - "6379:6379"
+  #   networks:
+  #     - ai-network
     
   backend:
     build: 
@@ -45,14 +45,15 @@ services:
         condition: service_healthy
       qdrant:
         condition: service_started
-      redis:
-        condition: service_started
+      # redis:
+      #   condition: service_started
     environment:
       - POSTGRES_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-ai_assistant}
       - QDRANT_URL=http://qdrant:6333
-      - REDIS_URL=redis://redis:6379/0
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen2.5:7b}
+      - OLLAMA_EMBEDDING_MODEL=${OLLAMA_EMBEDDING_MODEL:-nomic-embed-text}
+      - OLLAMA_MAX_TOKENS=${OLLAMA_MAX_TOKENS:-2000}
       - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
       - ENVIRONMENT=development
     ports:

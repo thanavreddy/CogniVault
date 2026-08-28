@@ -19,7 +19,7 @@ fi
 # Pull and start infra
 echo "Pulling docker images and starting infrastructure..."
 docker compose pull
-docker compose up -d postgres qdrant redis
+docker compose up -d postgres qdrant
 
 # Wait for health checks
 echo "Waiting for PostgreSQL to be ready..."

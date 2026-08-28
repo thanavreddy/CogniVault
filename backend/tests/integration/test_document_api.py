@@ -29,7 +29,7 @@ class TestDocumentUpload:
         self,
         test_client: AsyncClient,
         mock_qdrant,
-        mock_openai_embeddings,
+        mock_ollama_embeddings,
     ):
         """Upload with mocked auth and dependencies should succeed."""
         workspace_id = str(uuid4())
@@ -38,7 +38,7 @@ class TestDocumentUpload:
         with (
             patch("src.api.dependencies.get_current_user", return_value={"user_id": "user_123", "workspace_id": workspace_id}),
             patch("src.api.dependencies.get_vector_store", return_value=mock_qdrant),
-            patch("src.api.dependencies.get_embedding_service", return_value=mock_openai_embeddings),
+            patch("src.api.dependencies.get_embedding_service", return_value=mock_ollama_embeddings),
         ):
             response = await test_client.post(
                 "/api/v1/documents/upload",

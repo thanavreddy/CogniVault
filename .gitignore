@@ -81,3 +81,7 @@ htmlcov/
 *.pem
 *.key
 *.crt
+
+
+# Monitoring
+monitoring/

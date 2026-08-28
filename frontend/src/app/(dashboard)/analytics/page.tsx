@@ -14,9 +14,7 @@ const usageData = [
 ];
 
 const modelData = [
-  { name: 'GPT-4o', value: 400 },
-  { name: 'Claude 3.5 Sonnet', value: 300 },
-  { name: 'Llama 3 70B', value: 300 },
+  { name: 'qwen2.5:7b', value: 1000 },
 ];
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b'];
 
