@@ -155,6 +155,20 @@ created with a different embedding model or dimension cannot be reused directly.
 the Qdrant collection and upload the documents again whenever the embedding model or
 dimension changes.
 
+
+## Why I built this
+Why I Built This
+
+How does someone new to a company quickly find information
+buried inside large collections of private documents?
+
+CogniVault explores this problem by providing a private,
+AI-powered knowledge assistant that lets employees ask
+natural-language questions over company documents and
+receive grounded answers with citations.
+
+I also wanted to explore an architecture I could eventually
+use for CtrlXStudios as it grows.
 ## Documentation
 
 - [API reference](docs/api-reference.md)
