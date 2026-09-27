@@ -60,15 +60,10 @@ ENV/
 ehthumbs.db
 Thumbs.db
 
-# Docker
-docker-compose.override.yml
-.docker/
-
 # Data
 *.db
 *.sqlite3
 uploads/
-postgres_data/
 qdrant_data/
 grafana_data/
 

@@ -1,4 +1,4 @@
-.PHONY: setup dev test docker-up docker-down docker-build migrate migrate-create lint-backend lint-frontend format clean logs shell-backend
+.PHONY: setup dev test lint-backend lint-frontend format clean
 
 setup:
 	bash scripts/setup.sh
@@ -8,21 +8,6 @@ dev:
 
 test:
 	bash scripts/run_tests.sh
-
-docker-up:
-	docker compose up -d
-
-docker-down:
-	docker compose down
-
-docker-build:
-	docker compose build
-
-migrate:
-	cd backend && alembic upgrade head
-
-migrate-create:
-	cd backend && alembic revision --autogenerate -m "$(M)"
 
 lint-backend:
 	cd backend && ruff check src
@@ -39,8 +24,3 @@ clean:
 	find . -type d -name ".next" -exec rm -rf {} +
 	find . -type d -name "node_modules" -exec rm -rf {} +
 
-logs:
-	docker compose logs -f
-
-shell-backend:
-	docker compose exec backend bash

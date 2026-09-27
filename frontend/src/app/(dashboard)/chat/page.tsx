@@ -1,142 +1,21 @@
 "use client";
 
-import { useState } from "react";
-import { Send, Paperclip, Bot, User, FileText } from "lucide-react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { FormEvent, useState } from "react";
+import { Send } from "lucide-react";
+import { api, type ChatResponse } from "@/lib/api-client";
 
-// Note: Ensure @/components/ui/* are created
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Card } from "@/components/ui/card";
+type Message = { role: "user" | "assistant"; content: string; sources?: ChatResponse["sources"] };
 
 export default function ChatPage() {
-  const [messages, setMessages] = useState([
-    { id: 1, role: 'assistant', content: "Hello! I'm your Enterprise Knowledge Assistant. How can I help you today?", citations: [] },
-  ]);
-  const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleSend = () => {
-    if (!input.trim()) return;
-    const userMsg = { id: Date.now(), role: 'user', content: input, citations: [] };
-    setMessages(prev => [...prev, userMsg]);
-    setInput("");
-    setIsLoading(true);
-
-    // Simulate response
-    setTimeout(() => {
-      setMessages(prev => [...prev, {
-        id: Date.now() + 1,
-        role: 'assistant',
-        content: "Based on the documents, here is what I found. \n\n* **SSO Integration** is supported via SAML 2.0.\n* You can configure it in the `Settings > Security` tab.",
-        citations: [{ id: 'c1', title: 'Admin Guide.pdf', page: 14 }]
-      }]);
-      setIsLoading(false);
-    }, 1500);
+  const [question, setQuestion] = useState("");
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [busy, setBusy] = useState(false);
+  const submit = async (event: FormEvent) => {
+    event.preventDefault(); if (!question.trim()) return;
+    const current = question.trim(); setQuestion(""); setMessages((items) => [...items, { role: "user", content: current }]); setBusy(true);
+    try { const response = await api.chat(current); setMessages((items) => [...items, { role: "assistant", content: response.answer, sources: response.sources }]); }
+    catch (error) { setMessages((items) => [...items, { role: "assistant", content: error instanceof Error ? error.message : "The request failed." }]); }
+    finally { setBusy(false); }
   };
-
-  return (
-    <div className="h-full flex flex-col md:flex-row gap-6">
-      {/* Sidebar - Conversation History */}
-      <Card className="w-full md:w-64 flex-shrink-0 hidden md:flex flex-col h-[calc(100vh-8rem)]">
-        <div className="p-4 border-b">
-          <Button className="w-full">New Chat</Button>
-        </div>
-        <ScrollArea className="flex-1">
-          <div className="p-2 space-y-1">
-            <div className="px-3 py-2 text-sm bg-muted rounded-md font-medium cursor-pointer">
-              SSO Integration Help
-            </div>
-            <div className="px-3 py-2 text-sm text-muted-foreground hover:bg-muted/50 rounded-md cursor-pointer">
-              Q3 Financial Summary
-            </div>
-          </div>
-        </ScrollArea>
-      </Card>
-
-      {/* Main Chat Area */}
-      <Card className="flex-1 flex flex-col h-[calc(100vh-8rem)] overflow-hidden">
-        <ScrollArea className="flex-1 p-4">
-          <div className="space-y-6 max-w-3xl mx-auto">
-            {messages.map((msg) => (
-              <div key={msg.id} className={`flex gap-4 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                {msg.role === 'assistant' && (
-                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0 text-primary-foreground">
-                    <Bot size={18} />
-                  </div>
-                )}
-                
-                <div className={`flex flex-col gap-2 max-w-[80%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                  <div className={`p-4 rounded-xl ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted/50 border'}`}>
-                    {msg.role === 'user' ? (
-                      <p className="whitespace-pre-wrap">{msg.content}</p>
-                    ) : (
-                      <div className="prose prose-sm dark:prose-invert max-w-none">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                          {msg.content}
-                        </ReactMarkdown>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {msg.citations && msg.citations.length > 0 && (
-                    <div className="flex gap-2 flex-wrap mt-1">
-                      {msg.citations.map((c: any) => (
-                        <div key={c.id} className="flex items-center gap-1 text-xs bg-muted border px-2 py-1 rounded-md cursor-pointer hover:bg-muted/80">
-                          <FileText size={12} />
-                          <span>{c.title}</span>
-                          <span className="text-muted-foreground">p.{c.page}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {msg.role === 'user' && (
-                  <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
-                    <User size={18} />
-                  </div>
-                )}
-              </div>
-            ))}
-            {isLoading && (
-              <div className="flex gap-4">
-                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground">
-                  <Bot size={18} />
-                </div>
-                <div className="p-4 rounded-xl bg-muted/50 border flex items-center gap-2">
-                  <div className="w-2 h-2 bg-foreground/30 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                  <div className="w-2 h-2 bg-foreground/30 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                  <div className="w-2 h-2 bg-foreground/30 rounded-full animate-bounce"></div>
-                </div>
-              </div>
-            )}
-          </div>
-        </ScrollArea>
-
-        <div className="p-4 border-t bg-card">
-          <div className="max-w-3xl mx-auto flex gap-2">
-            <Button variant="outline" size="icon" className="flex-shrink-0">
-              <Paperclip size={18} />
-            </Button>
-            <Input 
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask anything about your knowledge base..."
-              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-              className="flex-1"
-            />
-            <Button onClick={handleSend} disabled={!input.trim() || isLoading} className="flex-shrink-0">
-              <Send size={18} />
-            </Button>
-          </div>
-          <p className="text-center text-xs text-muted-foreground mt-2">
-            AI can make mistakes. Consider verifying important information.
-          </p>
-        </div>
-      </Card>
-    </div>
-  );
+  return <section className="mx-auto flex min-h-[calc(100vh-10rem)] max-w-3xl flex-col gap-6"><div><p className="text-sm font-medium text-primary">Ask your files</p><h1 className="mt-2 text-4xl font-semibold tracking-tight">Chat</h1><p className="mt-2 text-muted-foreground">Answers are grounded in the chunks indexed from your local documents.</p></div><div className="flex-1 space-y-4 rounded-lg border bg-card p-5">{messages.length === 0 && <p className="text-sm text-muted-foreground">Index a document, then ask a question about it.</p>}{messages.map((message, index) => <div key={index} className={`rounded-lg p-4 ${message.role === "user" ? "ml-10 bg-primary text-primary-foreground" : "mr-10 bg-muted"}`}><p className="whitespace-pre-wrap text-sm">{message.content}</p>{message.sources && message.sources.length > 0 && <div className="mt-4 border-t border-current/20 pt-3 text-xs"><p className="mb-1 font-semibold">Sources</p>{message.sources.map((source, sourceIndex) => <p key={`${source.filename}-${sourceIndex}`}>• {source.filename} · chunk {source.chunk_id}</p>)}</div>}</div>)}</div><form onSubmit={submit} className="flex gap-2"><input value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="Ask about your documents..." className="min-w-0 flex-1 rounded-md border bg-card px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary" /><button disabled={busy || !question.trim()} className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-3 text-sm text-primary-foreground disabled:opacity-50"><Send size={16} /> Send</button></form></section>;
 }
